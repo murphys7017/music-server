@@ -8,7 +8,7 @@ import os
 
 # 可从环境变量或 config.py 读取数据库配置
 MYSQL_USER = os.getenv("MYSQL_USER", "root")
-MYSQL_PASSWORD = os.getenv("MYSQL_PASSWORD", "password")
+MYSQL_PASSWORD = os.getenv("MYSQL_PASSWORD", "123456")
 MYSQL_HOST = os.getenv("MYSQL_HOST", "127.0.0.1")
 MYSQL_PORT = os.getenv("MYSQL_PORT", "3306")
 MYSQL_DB = os.getenv("MYSQL_DB", "music_db")
