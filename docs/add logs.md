@@ -1,0 +1,5 @@
+user
+帮我在app目录下添加一个log模块，使用loguru为全局提供日志记录系统
+
+user
+我需要使用sqlalchemy 连接MySQL数据库 ，帮我在app文件夹下面写一个database.py，提供数据库连接，等公共方法
