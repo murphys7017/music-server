@@ -42,13 +42,18 @@ async def list_music(
         music_list = []
         for music in musics:
             music_dict = music_service.music_to_json(music)
-            # 添加播放和封面URL
+            # 添加播放URL
             music_dict['play_url'] = f"/music/play/{music.uuid}"
+            # 添加封面和缩略图URL
             cover_uuid = getattr(music, 'cover_uuid', None)
             if cover_uuid:
                 music_dict['cover_url'] = f"/music/cover/{cover_uuid}"
+                music_dict['thumbnail_url'] = f"/music/thumbnail/{cover_uuid}"
             else:
                 music_dict['cover_url'] = None
+                music_dict['thumbnail_url'] = None
+            # list接口不返回歌词
+            music_dict.pop('lyric', None)
             music_list.append(music_dict)
         
         return {
@@ -96,8 +101,12 @@ async def search_music(
             cover_uuid = getattr(music, 'cover_uuid', None)
             if cover_uuid:
                 music_dict['cover_url'] = f"/music/cover/{cover_uuid}"
+                music_dict['thumbnail_url'] = f"/music/thumbnail/{cover_uuid}"
             else:
                 music_dict['cover_url'] = None
+                music_dict['thumbnail_url'] = None
+            # search接口不返回歌词
+            music_dict.pop('lyric', None)
             music_list.append(music_dict)
         
         return {
@@ -133,8 +142,10 @@ async def get_music_detail(
         cover_uuid = getattr(music, 'cover_uuid', None)
         if cover_uuid:
             music_dict['cover_url'] = f"/music/cover/{cover_uuid}"
+            music_dict['thumbnail_url'] = f"/music/thumbnail/{cover_uuid}"
         else:
             music_dict['cover_url'] = None
+            music_dict['thumbnail_url'] = None
         
         return {
             "code": 200,
@@ -295,4 +306,34 @@ async def get_lyric(
         raise
     except Exception as e:
         logger.error(f"获取歌词失败: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/thumbnail/{cover_uuid}")
+async def get_thumbnail(cover_uuid: str):
+    """
+    获取缩略图
+    根据cover_uuid返回缩略图文件（小体积JPEG格式）
+    """
+    try:
+        from urllib.parse import unquote
+        cover_uuid = unquote(cover_uuid)
+        
+        # 在缩略图目录查找文件（统一为.jpg格式）
+        thumbnail_dir = Path(Config.THUMBNAIL_DIR)
+        thumbnail_path = thumbnail_dir / f"{cover_uuid}.jpg"
+        
+        if not thumbnail_path.exists():
+            raise HTTPException(status_code=404, detail="Thumbnail not found")
+        
+        return FileResponse(
+            path=str(thumbnail_path),
+            media_type='image/jpeg',
+            filename=thumbnail_path.name
+        )
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"获取缩略图失败 {cover_uuid}: {e}")
         raise HTTPException(status_code=500, detail=str(e))

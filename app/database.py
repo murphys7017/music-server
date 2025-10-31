@@ -4,9 +4,13 @@ SQLAlchemy MySQL 数据库连接与会话管理
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, scoped_session, declarative_base
 from sqlalchemy.pool import QueuePool
+from dotenv import load_dotenv
 import os
 
-# 可从环境变量或 config.py 读取数据库配置
+# 加载 .env 文件
+load_dotenv()
+
+# 从环境变量读取数据库配置
 MYSQL_USER = os.getenv("MYSQL_USER", "root")
 MYSQL_PASSWORD = os.getenv("MYSQL_PASSWORD", "123456")
 MYSQL_HOST = os.getenv("MYSQL_HOST", "127.0.0.1")

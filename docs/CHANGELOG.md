@@ -8,6 +8,78 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Added - 2025-11-01
 
+#### 缩略图系统 / Thumbnail System
+**开发背景**: 通过 GitHub Copilot Chat 完成
+
+**核心功能**:
+- 🖼️ **缩略图生成工具** (`app/utils/thumbnail_generator.py`, 200行)
+  - 自动生成 200x200 缩略图
+  - JPEG 格式压缩 (质量85)
+  - 处理透明背景自动转换
+  - 保持宽高比 (LANCZOS 重采样)
+  - 批量生成和单独生成支持
+  
+- 🔄 **扫描器集成** (`app/utils/music_scanner.py`)
+  - 扫描音乐时自动生成缩略图
+  - 现有封面批量转换 (6个成功)
+  
+- 🌐 **API 接口** (`app/routers/music.py`)
+  - 新增 `GET /music/thumbnail/{cover_uuid}` 接口
+  - `/music/list` 返回 `thumbnail_url`，移除 `lyric`
+  - `/music/search` 返回 `thumbnail_url`，移除 `lyric`
+  - `/music/detail/{uuid}` 返回 `thumbnail_url` 和 `lyric`
+
+**配置**:
+- `THUMBNAIL_DIR` - 缩略图存储目录
+- `THUMBNAIL_SIZE` - 缩略图尺寸 (200x200)
+- `THUMBNAIL_QUALITY` - JPEG 压缩质量 (85)
+
+**技术特点**:
+- ✅ 文件体积优化 (~20KB vs 原图 >100KB)
+- ✅ 统一 JPEG 格式输出
+- ✅ 自动创建目录结构
+- ✅ 跳过已存在的缩略图
+
+**依赖**:
+- Pillow 12.0.0
+
+---
+
+#### 环境变量管理 / Environment Variable Management
+**开发背景**: 通过 GitHub Copilot Chat 完成
+
+**核心功能**:
+- 🔐 **python-dotenv 集成**
+  - `app/config.py` 加载 .env 配置
+  - `app/database.py` 加载 .env 配置
+  - 统一环境变量管理
+  
+- 📝 **配置文件**
+  - `.env.example` - 配置模板 (可提交)
+  - `.env` - 实际配置 (已添加到 .gitignore)
+  
+**配置项**:
+```bash
+# 音乐目录
+MUSIC_DIR, LYRICS_DIR, COVER_DIR, THUMBNAIL_DIR
+
+# 数据库
+MYSQL_HOST, MYSQL_PORT, MYSQL_USER, MYSQL_PASSWORD, MYSQL_DB
+
+# 认证
+STATIC_TOKEN
+```
+
+**技术特点**:
+- ✅ 敏感信息与代码分离
+- ✅ 多环境配置支持
+- ✅ 安全的密码管理
+
+**依赖**:
+- python-dotenv 1.2.1
+
+---
+
 #### 消息队列 + 定时任务系统 / Message Queue + Scheduler System
 **开发背景**: 通过 GitHub Copilot Chat 对话协作完成
 
@@ -131,11 +203,67 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - 🐛 修复音乐路由中的类型检查错误 (20+ 处)
 - 🐛 修复调度器中的类型检查错误 (20+ 处)
 
+#### 类型注解错误修复
+- 🐛 修复 `thumbnail_generator.py` 中的 Optional 类型注解
+- 🐛 修复函数参数默认值为 None 的类型错误
+
 ---
 
 ## Git 提交建议
 
-### 提交1: 核心系统
+### 本次提交 (2025-11-01): 缩略图 + 环境变量
+
+#### 提交1: 缩略图功能
+```bash
+git add app/utils/thumbnail_generator.py app/config.py app/utils/music_scanner.py app/routers/music.py
+git commit -m "feat: 添加缩略图生成系统
+
+- 实现 thumbnail_generator 工具 (200行)
+- 支持自动生成 200x200 JPEG 缩略图
+- 集成到音乐扫描器自动生成
+- 添加 /music/thumbnail/{uuid} API 接口
+- list/search 接口返回 thumbnail_url，移除 lyric
+- detail 接口返回 thumbnail_url 和 lyric
+- 文件体积优化: ~20KB (原图 >100KB)
+
+依赖: Pillow 12.0.0
+
+Co-authored-by: GitHub Copilot
+Context: AI-assisted development 2025-11-01"
+```
+
+#### 提交2: 环境变量管理
+```bash
+git add app/config.py app/database.py .env.example .gitignore
+git commit -m "feat: 添加环境变量管理
+
+- 集成 python-dotenv 统一管理配置
+- 创建 .env.example 配置模板
+- 数据库配置从环境变量读取
+- .env 添加到 .gitignore 保护敏感信息
+
+依赖: python-dotenv 1.2.1
+
+Co-authored-by: GitHub Copilot"
+```
+
+#### 提交3: 测试和文档
+```bash
+git add test_thumbnail.py docs/CHANGELOG.md pyproject.toml
+git commit -m "test: 添加缩略图测试并更新文档
+
+- 添加缩略图功能测试脚本
+- 更新 CHANGELOG 记录新功能
+- 更新依赖: pillow, requests, python-dotenv
+
+Co-authored-by: GitHub Copilot"
+```
+
+---
+
+### 历史提交建议 (消息队列系统)
+
+#### 提交1: 核心系统
 ```bash
 git add app/core/message_queue.py app/core/scheduler.py app/models/scheduler_task.py
 git commit -m "feat: 添加消息队列和定时任务调度系统
@@ -150,7 +278,7 @@ Co-authored-by: GitHub Copilot
 Ref: Chat 2025-11-01"
 ```
 
-### 提交2: 文档系统
+#### 提交2: 文档系统
 ```bash
 git add docs/
 git commit -m "docs: 完善消息队列和调度器文档
@@ -163,7 +291,7 @@ git commit -m "docs: 完善消息队列和调度器文档
 Co-authored-by: GitHub Copilot"
 ```
 
-### 提交3: 测试组织
+#### 提交3: 测试组织
 ```bash
 git add test/ run_test.py
 git commit -m "test: 重组测试文件结构
@@ -176,7 +304,7 @@ git commit -m "test: 重组测试文件结构
 Co-authored-by: GitHub Copilot"
 ```
 
-### 提交4: 集成
+#### 提交4: 集成
 ```bash
 git add main.py
 git commit -m "feat: 集成调度器到主应用
@@ -223,9 +351,15 @@ Files: 10+ files, ~1500 lines of code
 - 音乐路由和数据库模型
 - 音乐扫描工具
 
-### v0.2.0 - 2025-11-01 (After Message Queue)
+### v0.2.0 - 2025-11-01 (Message Queue System)
 - 完整的消息队列系统
 - 定时任务调度器
 - 数据库持久化
 - 完整文档系统
 - 测试框架
+
+### v0.3.0 - 2025-11-01 (Thumbnail & Environment)
+- 缩略图生成系统 (Pillow)
+- 环境变量管理 (python-dotenv)
+- API 接口优化 (thumbnail_url)
+- 配置文件管理 (.env)

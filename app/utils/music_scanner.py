@@ -15,6 +15,7 @@ from app.utils.music_filename_parser import normalize_music_info
 from app.models.music import Music
 from app.services.music_service import add_music, music_exists
 from app.log import logger
+from app.utils.thumbnail_generator import generate_thumbnail_for_cover_uuid
 
 # 从配置中获取支持的格式
 SUPPORTED_FORMATS = Config.MUSIC_EXTS
@@ -49,6 +50,9 @@ def save_cover_file(cover_source_path: str) -> Optional[str]:
         # 复制文件
         shutil.copy2(cover_source_path, dest_path)
         logger.info(f"封面已保存: {dest_filename}")
+        
+        # 自动生成缩略图
+        generate_thumbnail_for_cover_uuid(cover_uuid)
         
         return cover_uuid
         
