@@ -124,6 +124,57 @@ async def search_music(
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@router.get("/search/lyric")
+async def search_music_by_lyric(
+    keyword: str = Query(..., description="歌词关键词"),
+    page: int = Query(1, ge=1, description="页码"),
+    page_size: int = Query(10, ge=1, le=100, description="每页数量"),
+    db: Session = Depends(get_db)
+):
+    """
+    根据歌词内容搜索音乐
+    只搜索包含歌词的音乐
+    """
+    try:
+        # 调用服务层函数
+        result = music_service.search_music_by_lyric(
+            db=db,
+            lyric_keyword=keyword,
+            page=page,
+            page_size=page_size
+        )
+        
+        # 序列化结果
+        music_list = []
+        for music in result['list']:
+            music_dict = music_service.music_to_json(music)
+            music_dict['play_url'] = f"/music/play/{music.uuid}"
+            cover_uuid = getattr(music, 'cover_uuid', None)
+            if cover_uuid:
+                music_dict['cover_url'] = f"/music/cover/{cover_uuid}"
+                music_dict['thumbnail_url'] = f"/music/thumbnail/{cover_uuid}"
+            else:
+                music_dict['cover_url'] = None
+                music_dict['thumbnail_url'] = None
+            # 歌词搜索接口保留歌词（方便高亮显示匹配部分）
+            music_list.append(music_dict)
+        
+        return {
+            "code": 200,
+            "message": "success",
+            "data": {
+                "total": result['total'],
+                "page": page,
+                "page_size": page_size,
+                "keyword": keyword,
+                "list": music_list
+            }
+        }
+    except Exception as e:
+        logger.error(f"根据歌词搜索音乐失败: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @router.get("/detail/{uuid}")
 async def get_music_detail(
     uuid: str,

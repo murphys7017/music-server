@@ -85,18 +85,20 @@ class Scheduler:
         try:
             now = int(time.time())
             
-            # 查询所有启用的定时任务 / Query all enabled scheduled tasks
+            # 只查询启用且到期的任务，减少数据库压力
+            # Query only enabled and due tasks to reduce database load
             tasks = db.query(SchedulerTask).filter(
-                SchedulerTask.enabled == True
+                SchedulerTask.enabled == True,
+                SchedulerTask.next_run_at <= now
             ).all()
+            
+            logger.debug(f"检查到 {len(tasks)} 个到期任务 / Found {len(tasks)} due tasks")
             
             for task in tasks:
                 try:
-                    # 检查是否应该执行 / Check if should execute
-                    if self._should_execute(task, now):
-                        self._execute_task(task, now, db)
+                    self._execute_task(task, now, db)
                 except Exception as e:
-                    logger.error(f"检查任务失败 / Task check failed [{task.task_id}]: {e}")
+                    logger.error(f"执行任务失败 / Task execution failed [{task.task_id}]: {e}")
             
             db.commit()
             

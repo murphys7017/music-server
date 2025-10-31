@@ -80,6 +80,33 @@ STATIC_TOKEN
 
 ---
 
+#### 歌词搜索功能 / Lyric Search Feature
+**开发背景**: 通过 GitHub Copilot Chat 完成
+
+**核心功能**:
+- 🔍 **歌词搜索服务** (`app/services/music_service.py`)
+  - `search_music_by_lyric()` - 根据歌词内容搜索
+  - 自动过滤无歌词音乐
+  - 支持模糊匹配和分页
+  
+- 🌐 **API 接口** (`app/routers/music.py`)
+  - 新增 `GET /music/search/lyric` 接口
+  - 参数: `keyword`, `page`, `page_size`
+  - 返回完整歌词（方便前端高亮匹配部分）
+
+**使用示例**:
+```bash
+GET /music/search/lyric?keyword=love&page=1&page_size=10
+```
+
+**技术特点**:
+- ✅ LIKE 模糊匹配
+- ✅ 自动过滤空歌词
+- ✅ 返回完整歌词信息
+- ✅ 支持分页查询
+
+---
+
 #### 消息队列 + 定时任务系统 / Message Queue + Scheduler System
 **开发背景**: 通过 GitHub Copilot Chat 对话协作完成
 
@@ -188,10 +215,19 @@ STATIC_TOKEN
 
 ### Changed - 2025-11-01
 
-#### 项目结构优化
-- 📁 创建 `test/` 目录,统一管理测试文件
-- 🔧 测试文件添加自动路径处理
-- 📚 更新所有文档中的测试路径引用
+#### 搜索功能优化 / Search Optimization
+- � 修复 `/music/search` API 的 OR 查询逻辑
+  - 原逻辑: AND 条件（所有字段都匹配才返回）
+  - 新逻辑: OR 条件（任意字段匹配即返回）
+  - 使用 `sqlalchemy.or_()` 组合条件
+
+#### 调度器性能优化 / Scheduler Performance
+- ⚡ 优化定时任务查询策略
+  - 原逻辑: 查询所有启用任务后逐个判断
+  - 新逻辑: 只查询启用且已到期的任务
+  - 添加数据库索引过滤 (`enabled=True AND next_run_at<=now`)
+  - 添加调试日志显示到期任务数量
+  - 显著减少数据库压力
 
 ---
 
@@ -206,6 +242,15 @@ STATIC_TOKEN
 #### 类型注解错误修复
 - 🐛 修复 `thumbnail_generator.py` 中的 Optional 类型注解
 - 🐛 修复函数参数默认值为 None 的类型错误
+
+#### 搜索逻辑错误修复
+- 🐛 修复音乐搜索 API 使用 AND 逻辑导致结果为空
+- 🐛 改为使用 OR 逻辑，任意字段匹配即返回结果
+
+#### 项目结构优化
+- 📁 创建 `test/` 目录,统一管理测试文件
+- 🔧 测试文件添加自动路径处理
+- 📚 更新所有文档中的测试路径引用
 
 ---
 
@@ -255,6 +300,19 @@ git commit -m "test: 添加缩略图测试并更新文档
 - 添加缩略图功能测试脚本
 - 更新 CHANGELOG 记录新功能
 - 更新依赖: pillow, requests, python-dotenv
+
+Co-authored-by: GitHub Copilot"
+```
+
+#### 提交4: 功能增强和优化
+```bash
+git add app/services/music_service.py app/routers/music.py app/core/scheduler.py
+git commit -m "feat: 添加歌词搜索并优化性能
+
+- 新增 /music/search/lyric API 接口
+- 修复 /music/search 搜索逻辑（AND -> OR）
+- 优化调度器只查询到期任务
+- 添加调度器调试日志
 
 Co-authored-by: GitHub Copilot"
 ```
@@ -361,5 +419,8 @@ Files: 10+ files, ~1500 lines of code
 ### v0.3.0 - 2025-11-01 (Thumbnail & Environment)
 - 缩略图生成系统 (Pillow)
 - 环境变量管理 (python-dotenv)
+- 歌词搜索功能
 - API 接口优化 (thumbnail_url)
 - 配置文件管理 (.env)
+- 搜索逻辑修复 (OR 条件)
+- 调度器性能优化 (查询优化)

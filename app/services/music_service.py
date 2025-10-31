@@ -94,12 +94,46 @@ def query_music(db: Session, name: Optional[str] = None, author: Optional[str] =
 
 def fuzzy_query_music(db: Session, name: Optional[str] = None, author: Optional[str] = None, album: Optional[str] = None, page: int = 1, page_size: int = 10) -> Dict[str, Any]:
     q = db.query(Music)
+    
+    # 构建 OR 条件列表
+    conditions = []
     if name:
-        q = q.filter(Music.name.like(f"%{name}%"))
+        conditions.append(Music.name.like(f"%{name}%"))
     if author:
-        q = q.filter(Music.author.like(f"%{author}%"))
+        conditions.append(Music.author.like(f"%{author}%"))
     if album:
-        q = q.filter(Music.album.like(f"%{album}%"))
+        conditions.append(Music.album.like(f"%{album}%"))
+    
+    # 如果有条件，使用 or_ 组合
+    if conditions:
+        q = q.filter(or_(*conditions))
+    
+    total = q.count()
+    items = q.offset((page-1)*page_size).limit(page_size).all()
+    return {"total": total, "list": items}
+
+# 根据歌词搜索音乐
+
+def search_music_by_lyric(db: Session, lyric_keyword: str, page: int = 1, page_size: int = 10) -> Dict[str, Any]:
+    """
+    根据歌词内容搜索音乐
+    
+    Args:
+        db: 数据库会话
+        lyric_keyword: 歌词关键词
+        page: 页码
+        page_size: 每页数量
+        
+    Returns:
+        dict: {'total': 总数, 'list': 音乐列表}
+    """
+    q = db.query(Music)
+    
+    # 只搜索有歌词的音乐
+    q = q.filter(Music.lyric.isnot(None))
+    q = q.filter(Music.lyric != "")
+    q = q.filter(Music.lyric.like(f"%{lyric_keyword}%"))
+    
     total = q.count()
     items = q.offset((page-1)*page_size).limit(page_size).all()
     return {"total": total, "list": items}

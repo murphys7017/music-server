@@ -28,7 +28,7 @@ engine = create_engine(
     pool_size=10,
     max_overflow=20,
     pool_recycle=1800,
-    echo=False  # 可设为True调试SQL
+    echo=True  # 可设为True调试SQL
 )
 
 # 创建会话工厂
