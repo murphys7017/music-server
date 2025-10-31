@@ -10,7 +10,7 @@ Base.metadata.create_all(bind=engine)
 app = FastAPI(title="Music Server", version="1.0.0")
 
 # 注册路由
-app.include_router(music.router, prefix="/music", tags=["music"])
+app.include_router(music.router, tags=["music"])
 
 # 启动调度器
 scheduler = get_scheduler()
