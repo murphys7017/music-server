@@ -33,3 +33,118 @@
 [2025-11-01 00:08:28] [INFO] 信息已更新: again
 [2025-11-01 00:08:28] [INFO] 扫描完成! 总计:3, 成功:0, 升级:3, 跳过:0, 失败:0
 [2025-11-01 00:16:09] [INFO] Starting Music Server...
+[2025-11-01 00:41:00] [INFO] 创建数据库表 / Creating database tables...
+[2025-11-01 00:41:00] [INFO] 消息队列已初始化 / Message queue initialized
+[2025-11-01 00:41:00] [INFO] 后台清理线程已启动 / Cleanup thread started
+[2025-11-01 00:41:00] [INFO] 全局消息队列已创建 / Global message queue created
+[2025-11-01 00:41:00] [INFO] Worker 已启动 / Worker started
+[2025-11-01 00:41:02] [INFO] 
+===== 测试1: 间隔调度任务 / Test 1: Interval Scheduling =====
+[2025-11-01 00:41:02] [INFO] 调度器已初始化 / Scheduler initialized (check_interval=10s)
+[2025-11-01 00:41:02] [INFO] 调度器工作线程已启动 / Scheduler worker thread started
+[2025-11-01 00:41:02] [INFO] 调度器已启动 / Scheduler started
+[2025-11-01 00:41:02] [INFO] 全局调度器已创建 / Global scheduler created
+[2025-11-01 00:41:02] [INFO] 定时任务已添加 / Scheduled task added: 定期下载B站音乐 [9b9f6e68-a344-4606-87c1-43a9bcda1297]
+[2025-11-01 00:41:02] [INFO] 已添加间隔任务 / Added interval task: 9b9f6e68-a344-4606-87c1-43a9bcda1297
+[2025-11-01 00:41:02] [INFO] 任务详情 / Task details: {'task_id': '9b9f6e68-a344-4606-87c1-43a9bcda1297', 'name': '定期下载B站音乐', 'task_type': 'download_bilibili_audio', 'params': {'bv_id': 'BV1xx411c7XZ', 'quality': '320k'}, 'schedule_type': 'interval', 'interval_seconds': 30, 'cron_expression': None, 'execute_at': None, 'enabled': True, 'run_count': 0, 'max_runs': 5, 'last_run_at': None, 'next_run_at': 1761928862, 'created_at': 1761928862, 'updated_at': 1761928862, 'description': '每30秒下载一次B站音乐,共执行5次'}
+[2025-11-01 00:41:04] [INFO] 
+===== 测试2: 单次执行任务 / Test 2: One-time Execution =====
+[2025-11-01 00:41:04] [INFO] 定时任务已添加 / Scheduled task added: 单次音频转换 [23f69662-0699-4b33-a262-b9aafe550d9a]
+[2025-11-01 00:41:04] [INFO] 已添加单次任务 / Added one-time task: 23f69662-0699-4b33-a262-b9aafe550d9a
+[2025-11-01 00:41:04] [INFO] 将在5秒后执行 / Will execute in 5 seconds
+[2025-11-01 00:41:06] [INFO] 
+===== 测试3: Cron表达式任务 / Test 3: Cron Expression =====
+[2025-11-01 00:41:06] [INFO] 定时任务已添加 / Scheduled task added: 定期清理临时文件 [8bf7ca67-bab5-4870-9de8-0c8e9020bbc1]
+[2025-11-01 00:41:06] [INFO] 已添加Cron任务 / Added cron task: 8bf7ca67-bab5-4870-9de8-0c8e9020bbc1
+[2025-11-01 00:41:08] [INFO] 
+===== 测试4: 任务管理 / Test 4: Task Management =====
+[2025-11-01 00:41:08] [INFO] 定时任务已添加 / Scheduled task added: 测试管理任务 [62b9732b-2560-4289-be3c-a100fdd13012]
+[2025-11-01 00:41:08] [INFO] 已添加任务 / Added task: 62b9732b-2560-4289-be3c-a100fdd13012
+[2025-11-01 00:41:09] [INFO] 所有任务数量 / Total tasks: 4
+[2025-11-01 00:41:09] [INFO]   - 单次音频转换 [23f69662...] enabled=True
+[2025-11-01 00:41:09] [INFO]   - 测试管理任务 [62b9732b...] enabled=True
+[2025-11-01 00:41:09] [INFO]   - 定期清理临时文件 [8bf7ca67...] enabled=True
+[2025-11-01 00:41:09] [INFO]   - 定期下载B站音乐 [9b9f6e68...] enabled=True
+[2025-11-01 00:41:09] [INFO] 
+暂停任务 / Pausing task: 62b9732b-2560-4289-be3c-a100fdd13012
+[2025-11-01 00:41:09] [INFO] 定时任务已暂停 / Scheduled task paused: 测试管理任务 [62b9732b-2560-4289-be3c-a100fdd13012]
+[2025-11-01 00:41:10] [INFO] 任务状态 / Task status: enabled=False
+[2025-11-01 00:41:10] [INFO] 
+恢复任务 / Resuming task: 62b9732b-2560-4289-be3c-a100fdd13012
+[2025-11-01 00:41:10] [INFO] 定时任务已恢复 / Scheduled task resumed: 测试管理任务 [62b9732b-2560-4289-be3c-a100fdd13012]
+[2025-11-01 00:41:11] [INFO] 任务状态 / Task status: enabled=True
+[2025-11-01 00:41:11] [INFO] 
+删除任务 / Deleting task: 62b9732b-2560-4289-be3c-a100fdd13012
+[2025-11-01 00:41:11] [INFO] 定时任务已删除 / Scheduled task deleted: 测试管理任务 [62b9732b-2560-4289-be3c-a100fdd13012]
+[2025-11-01 00:41:12] [INFO] 任务已推入队列 / Task pushed: 6c6aa159-520f-43ac-8f7e-3bf28753047c [convert_audio_format]
+[2025-11-01 00:41:12] [INFO] 任务已弹出 / Task popped: 6c6aa159-520f-43ac-8f7e-3bf28753047c [convert_audio_format]
+[2025-11-01 00:41:12] [INFO] 定时任务已完成并禁用 / Scheduled task completed and disabled: 单次音频转换
+[2025-11-01 00:41:12] [INFO] [Worker] 处理任务 / Processing task: 6c6aa159-520f-43ac-8f7e-3bf28753047c [convert_audio_format]
+[2025-11-01 00:41:12] [INFO] 定时任务已执行 / Scheduled task executed: 单次音频转换 [23f69662-0699-4b33-a262-b9aafe550d9a] -> Normal Task [6c6aa159-520f-43ac-8f7e-3bf28753047c], run_count=1, next_run_at=None
+[2025-11-01 00:41:12] [INFO]   来源调度任务 / From scheduler: 单次音频转换
+[2025-11-01 00:41:12] [INFO] 任务已推入队列 / Task pushed: 1e4fe9bb-b941-4ad7-9faf-e0a7c1f436de [cleanup_temp_files]
+[2025-11-01 00:41:12] [INFO]   参数 / Params: {'input_file': '/music/song.mp3', 'output_format': 'flac'}
+[2025-11-01 00:41:12] [INFO] 定时任务已执行 / Scheduled task executed: 定期清理临时文件 [8bf7ca67-bab5-4870-9de8-0c8e9020bbc1] -> Normal Task [1e4fe9bb-b941-4ad7-9faf-e0a7c1f436de], run_count=1, next_run_at=1761929172
+[2025-11-01 00:41:12] [INFO] 任务已推入队列 / Task pushed: d229c380-820c-4c09-888b-c9f8f0de0fa5 [download_bilibili_audio]
+[2025-11-01 00:41:12] [INFO] 定时任务已执行 / Scheduled task executed: 定期下载B站音乐 [9b9f6e68-a344-4606-87c1-43a9bcda1297] -> Normal Task [d229c380-820c-4c09-888b-c9f8f0de0fa5], run_count=1, next_run_at=1761928902
+[2025-11-01 00:41:12] [INFO] 任务是否存在 / Task exists: False
+[2025-11-01 00:41:13] [SUCCESS] [Worker] 任务完成 / Task completed: 6c6aa159-520f-43ac-8f7e-3bf28753047c
+[2025-11-01 00:41:13] [INFO] 任务已弹出 / Task popped: 1e4fe9bb-b941-4ad7-9faf-e0a7c1f436de [cleanup_temp_files]
+[2025-11-01 00:41:13] [INFO] [Worker] 处理任务 / Processing task: 1e4fe9bb-b941-4ad7-9faf-e0a7c1f436de [cleanup_temp_files]
+[2025-11-01 00:41:13] [INFO]   来源调度任务 / From scheduler: 定期清理临时文件
+[2025-11-01 00:41:13] [INFO]   参数 / Params: {'temp_dir': '/tmp/music'}
+[2025-11-01 00:41:14] [SUCCESS] [Worker] 任务完成 / Task completed: 1e4fe9bb-b941-4ad7-9faf-e0a7c1f436de
+[2025-11-01 00:41:14] [INFO] 任务已弹出 / Task popped: d229c380-820c-4c09-888b-c9f8f0de0fa5 [download_bilibili_audio]
+[2025-11-01 00:41:14] [INFO] [Worker] 处理任务 / Processing task: d229c380-820c-4c09-888b-c9f8f0de0fa5 [download_bilibili_audio]
+[2025-11-01 00:41:14] [INFO]   来源调度任务 / From scheduler: 定期下载B站音乐
+[2025-11-01 00:41:14] [INFO]   参数 / Params: {'bv_id': 'BV1xx411c7XZ', 'quality': '320k'}
+[2025-11-01 00:41:14] [INFO] 
+===== 测试5: B站下载场景 / Test 5: Bilibili Download Scenario =====
+[2025-11-01 00:41:14] [INFO] 定时任务已添加 / Scheduled task added: 每日下载B站收藏夹 [2976b9ee-0c83-4abf-8893-bf8b72b47666]
+[2025-11-01 00:41:14] [INFO] 定时任务已添加 / Scheduled task added: 检查UP主新投稿 [ac9df246-45dc-4dd8-94fe-c26965d0453c]
+[2025-11-01 00:41:14] [INFO] 定时任务已添加 / Scheduled task added: 立即下载指定视频 [0a2a8e73-87e0-492f-b737-e1f2095dc7be]
+[2025-11-01 00:41:14] [INFO] 已创建B站下载场景任务 / Created Bilibili download tasks:
+[2025-11-01 00:41:14] [INFO]   - 每日收藏夹下载: 2976b9ee-0c83-4abf-8893-bf8b72b47666
+[2025-11-01 00:41:14] [INFO]   - 每小时检查UP主: ac9df246-45dc-4dd8-94fe-c26965d0453c
+[2025-11-01 00:41:14] [INFO]   - 立即下载视频: 0a2a8e73-87e0-492f-b737-e1f2095dc7be
+[2025-11-01 00:41:14] [SUCCESS] 
+所有测试已创建 / All tests created
+[2025-11-01 00:41:14] [INFO] 调度器正在运行,等待任务执行... / Scheduler is running, waiting for task execution...
+[2025-11-01 00:41:14] [INFO] 观察60秒后退出 / Observing for 60 seconds before exit...
+[2025-11-01 00:41:15] [SUCCESS] [Worker] 任务完成 / Task completed: d229c380-820c-4c09-888b-c9f8f0de0fa5
+[2025-11-01 00:41:22] [INFO] 任务已推入队列 / Task pushed: d9fb4bd8-e73c-42d1-b1d1-8749a8262b13 [download_bilibili_audio]
+[2025-11-01 00:41:22] [INFO] 任务已弹出 / Task popped: d9fb4bd8-e73c-42d1-b1d1-8749a8262b13 [download_bilibili_audio]
+[2025-11-01 00:41:22] [INFO] 定时任务已完成并禁用 / Scheduled task completed and disabled: 立即下载指定视频
+[2025-11-01 00:41:22] [INFO] [Worker] 处理任务 / Processing task: d9fb4bd8-e73c-42d1-b1d1-8749a8262b13 [download_bilibili_audio]
+[2025-11-01 00:41:22] [INFO] 定时任务已执行 / Scheduled task executed: 立即下载指定视频 [0a2a8e73-87e0-492f-b737-e1f2095dc7be] -> Normal Task [d9fb4bd8-e73c-42d1-b1d1-8749a8262b13], run_count=1, next_run_at=None
+[2025-11-01 00:41:22] [INFO]   来源调度任务 / From scheduler: 立即下载指定视频
+[2025-11-01 00:41:22] [INFO] 任务已推入队列 / Task pushed: fcf2d813-49ae-4808-813f-91f50864a262 [download_bilibili_favorites]
+[2025-11-01 00:41:22] [INFO]   参数 / Params: {'bv_id': 'BV1xx411c7XZ', 'quality': '320k', 'extract_cover': True, 'extract_lyrics': True}
+[2025-11-01 00:41:22] [INFO] 定时任务已执行 / Scheduled task executed: 每日下载B站收藏夹 [2976b9ee-0c83-4abf-8893-bf8b72b47666] -> Normal Task [fcf2d813-49ae-4808-813f-91f50864a262], run_count=1, next_run_at=1762015282
+[2025-11-01 00:41:22] [INFO] 任务已推入队列 / Task pushed: 0dec14af-6e08-4541-8c7a-43a75602d503 [check_bilibili_uploader_new]
+[2025-11-01 00:41:22] [INFO] 定时任务已执行 / Scheduled task executed: 检查UP主新投稿 [ac9df246-45dc-4dd8-94fe-c26965d0453c] -> Normal Task [0dec14af-6e08-4541-8c7a-43a75602d503], run_count=1, next_run_at=1761932482
+[2025-11-01 00:41:23] [SUCCESS] [Worker] 任务完成 / Task completed: d9fb4bd8-e73c-42d1-b1d1-8749a8262b13
+[2025-11-01 00:41:23] [INFO] 任务已弹出 / Task popped: fcf2d813-49ae-4808-813f-91f50864a262 [download_bilibili_favorites]
+[2025-11-01 00:41:23] [INFO] [Worker] 处理任务 / Processing task: fcf2d813-49ae-4808-813f-91f50864a262 [download_bilibili_favorites]
+[2025-11-01 00:41:23] [INFO]   来源调度任务 / From scheduler: 每日下载B站收藏夹
+[2025-11-01 00:41:23] [INFO]   参数 / Params: {'favorites_id': '123456', 'quality': '320k', 'save_dir': '/music/bilibili'}
+[2025-11-01 00:41:24] [SUCCESS] [Worker] 任务完成 / Task completed: fcf2d813-49ae-4808-813f-91f50864a262
+[2025-11-01 00:41:24] [INFO] 任务已弹出 / Task popped: 0dec14af-6e08-4541-8c7a-43a75602d503 [check_bilibili_uploader_new]
+[2025-11-01 00:41:24] [INFO] [Worker] 处理任务 / Processing task: 0dec14af-6e08-4541-8c7a-43a75602d503 [check_bilibili_uploader_new]
+[2025-11-01 00:41:24] [INFO]   来源调度任务 / From scheduler: 检查UP主新投稿
+[2025-11-01 00:41:24] [INFO]   参数 / Params: {'uploader_ids': ['123', '456', '789'], 'auto_download': True}
+[2025-11-01 00:41:25] [SUCCESS] [Worker] 任务完成 / Task completed: 0dec14af-6e08-4541-8c7a-43a75602d503
+[2025-11-01 00:41:42] [INFO] 任务已推入队列 / Task pushed: 28befbe5-56ba-43c3-90c0-7007ddd6813c [download_bilibili_audio]
+[2025-11-01 00:41:42] [INFO] 任务已弹出 / Task popped: 28befbe5-56ba-43c3-90c0-7007ddd6813c [download_bilibili_audio]
+[2025-11-01 00:41:42] [INFO] 定时任务已执行 / Scheduled task executed: 定期下载B站音乐 [9b9f6e68-a344-4606-87c1-43a9bcda1297] -> Normal Task [28befbe5-56ba-43c3-90c0-7007ddd6813c], run_count=2, next_run_at=1761928932
+[2025-11-01 00:41:42] [INFO] [Worker] 处理任务 / Processing task: 28befbe5-56ba-43c3-90c0-7007ddd6813c [download_bilibili_audio]
+[2025-11-01 00:41:42] [INFO]   来源调度任务 / From scheduler: 定期下载B站音乐
+[2025-11-01 00:41:42] [INFO]   参数 / Params: {'bv_id': 'BV1xx411c7XZ', 'quality': '320k'}
+[2025-11-01 00:41:43] [SUCCESS] [Worker] 任务完成 / Task completed: 28befbe5-56ba-43c3-90c0-7007ddd6813c
+[2025-11-01 00:42:12] [INFO] 任务已推入队列 / Task pushed: 91c7b661-45b1-4cdf-b666-7a264f18e42c [download_bilibili_audio]
+[2025-11-01 00:42:12] [INFO] 任务已弹出 / Task popped: 91c7b661-45b1-4cdf-b666-7a264f18e42c [download_bilibili_audio]
+[2025-11-01 00:42:12] [INFO] 定时任务已执行 / Scheduled task executed: 定期下载B站音乐 [9b9f6e68-a344-4606-87c1-43a9bcda1297] -> Normal Task [91c7b661-45b1-4cdf-b666-7a264f18e42c], run_count=3, next_run_at=1761928962
+[2025-11-01 00:42:12] [INFO] [Worker] 处理任务 / Processing task: 91c7b661-45b1-4cdf-b666-7a264f18e42c [download_bilibili_audio]
+[2025-11-01 00:42:12] [INFO]   来源调度任务 / From scheduler: 定期下载B站音乐
+[2025-11-01 00:42:12] [INFO]   参数 / Params: {'bv_id': 'BV1xx411c7XZ', 'quality': '320k'}
+[2025-11-01 00:42:13] [SUCCESS] [Worker] 任务完成 / Task completed: 91c7b661-45b1-4cdf-b666-7a264f18e42c
