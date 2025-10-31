@@ -83,29 +83,33 @@ uv pip install -r requirements.txt
 
 ### 2. 配置环境变量
 
-创建 `.env` 文件或设置环境变量:
+复制 `.env.example` 为 `.env` 并修改配置:
 
 ```bash
 # 音乐目录
 MUSIC_DIR=C:\Users\Administrator\Downloads\song\test
-# 封面目录
-COVER_DIR=C:\Users\Administrator\Downloads\song\covers
-# MySQL连接
-MYSQL_HOST=localhost
+LYRICS_DIR=C:\Users\Administrator\Downloads\song\test\lyrics
+COVER_DIR=C:\Users\Administrator\Downloads\song\test\covers
+THUMBNAIL_DIR=C:\Users\Administrator\Downloads\song\test\thumbnails
+
+# 数据库配置
+MYSQL_HOST=127.0.0.1
 MYSQL_PORT=3306
 MYSQL_USER=root
 MYSQL_PASSWORD=your_password
-MYSQL_DATABASE=music_server
+MYSQL_DB=music_db
+
+# 服务器配置
+SERVER_HOST=0.0.0.0
+SERVER_PORT=8000
+
+# 认证
+STATIC_TOKEN=your_static_token_here
 ```
 
-### 3. 初始化数据库
+### 3. 数据库
 
-```python
-from app.database import engine, Base
-
-# 创建所有表
-Base.metadata.create_all(bind=engine)
-```
+系统自动建表，目前只添加了MySQL数据库，如使用其他数据库自行安装依赖，并修改`app/database.py`文件
 
 ### 4. 启动服务器
 
@@ -115,10 +119,10 @@ python main.py
 
 或
 ```bash
-uvicorn main:app --reload
+uv run main.py
 ```
 
-服务器将在 `http://localhost:8000` 启动。
+服务器将在 `http://0.0.0.0:8000` 启动（可通过 `.env` 配置 `SERVER_HOST` 和 `SERVER_PORT`）。
 
 ### 5. 访问API文档
 
@@ -309,6 +313,18 @@ GET /music/cover/{cover_uuid}
 GET /music/lyric/{music_uuid}
 ```
 
+#### 7. 根据歌词搜索音乐
+```http
+GET /music/search/lyric?keyword=love&page=1&page_size=20
+```
+搜索歌词中包含关键词的音乐，返回完整歌词信息。
+
+#### 8. 获取缩略图
+```http
+GET /music/thumbnail/{cover_uuid}
+```
+返回 200x200 JPEG 缩略图，体积约 20KB。
+
 ---
 
 ## 🛠️ 开发指南 / Development Guide
@@ -460,90 +476,7 @@ scan_and_import_folder("/path/to/music", skip_existing=False)
 
 ---
 
-## 📝 最佳实践 / Best Practices
-
-### 1. 音乐导入流程
-
-```python
-# 步骤1: 扫描文件夹
-from app.utils.music_scanner import scan_and_import_folder
-
-scan_and_import_folder(
-    folder_path="/music/new",
-    skip_existing=True,
-    upgrade_quality=True
-)
-
-# 步骤2: 验证导入结果
-from app.services.music_service import query_music
-from app.database import SessionLocal
-
-db = SessionLocal()
-musics = query_music(db, page=1, page_size=10)
-print(f"共导入 {len(musics)} 首音乐")
-db.close()
-```
-
-### 2. 定时下载B站音乐
-
-```python
-from app.core.scheduler import get_scheduler
-from app.core.message_queue import set_public
-
-scheduler = get_scheduler()
-
-# 设置cookie
-set_public("bilibili_cookie", "SESSDATA=xxx", ttl=86400)
-
-# 每天凌晨2点下载收藏夹
-scheduler.add_scheduler_task(
-    name="每日B站收藏夹下载",
-    task_type="download_bilibili_favorites",
-    schedule_type="cron",
-    cron_expression="0 2 * * *",
-    params={"favorites_id": "123456"},
-    description="每天凌晨2点自动下载B站收藏夹"
-)
-```
-
-### 3. Worker最佳实践
-
-```python
-import threading
-from app.core.message_queue import get_queue
-from app.log import logger
-
-def worker(worker_id):
-    queue = get_queue()
-    logger.info(f"Worker-{worker_id} started")
-    
-    while True:
-        try:
-            task = queue.pop_task(timeout=5)
-            if task:
-                task_type = task["type"]
-                params = task["params"]
-                
-                # 处理任务
-                if task_type == "download_audio":
-                    download_audio(**params)
-                elif task_type == "convert_format":
-                    convert_format(**params)
-                
-                queue.task_done()
-                logger.success(f"Worker-{worker_id} completed task")
-                
-        except Exception as e:
-            logger.error(f"Worker-{worker_id} error: {e}")
-
-# 启动多个Worker
-for i in range(3):
-    threading.Thread(target=worker, args=(i,), daemon=True).start()
-```
-
----
-
-## 🔮 未来计划 / Future Plans
+## 📝🔮 未来计划 / Future Plans
 
 - [ ] B站音乐下载功能完整实现
 - [ ] 用户系统(登录、权限管理)

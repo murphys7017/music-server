@@ -32,6 +32,10 @@ class Config:
     # 日志目录
     LOG_DIR = os.path.join(os.path.dirname(__file__), "..", "logs")
     
+    # 服务器配置
+    SERVER_HOST = os.getenv("SERVER_HOST", "0.0.0.0")
+    SERVER_PORT = int(os.getenv("SERVER_PORT", "8000"))
+    
     # 其他全局配置项...
 
 # 全局变量（如需在多处共享可在此定义）

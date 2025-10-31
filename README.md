@@ -83,29 +83,33 @@ uv pip install -r requirements.txt
 
 ### 2. 配置环境变量
 
-创建 `.env` 文件或设置环境变量:
+复制 `.env.example` 为 `.env` 并修改配置:
 
 ```bash
 # 音乐目录
 MUSIC_DIR=C:\Users\Administrator\Downloads\song\test
-# 封面目录
-COVER_DIR=C:\Users\Administrator\Downloads\song\covers
-# MySQL连接
-MYSQL_HOST=localhost
+LYRICS_DIR=C:\Users\Administrator\Downloads\song\test\lyrics
+COVER_DIR=C:\Users\Administrator\Downloads\song\test\covers
+THUMBNAIL_DIR=C:\Users\Administrator\Downloads\song\test\thumbnails
+
+# 数据库配置
+MYSQL_HOST=127.0.0.1
 MYSQL_PORT=3306
 MYSQL_USER=root
 MYSQL_PASSWORD=your_password
-MYSQL_DATABASE=music_server
+MYSQL_DB=music_db
+
+# 服务器配置
+SERVER_HOST=0.0.0.0
+SERVER_PORT=8000
+
+# 认证
+STATIC_TOKEN=your_static_token_here
 ```
 
-### 3. 初始化数据库
+### 3. 数据库
 
-```python
-from app.database import engine, Base
-
-# 创建所有表
-Base.metadata.create_all(bind=engine)
-```
+系统自动建表，目前只添加了MySQL数据库，如使用其他数据库自行安装依赖，并修改`app/database.py`文件
 
 ### 4. 启动服务器
 
@@ -118,7 +122,7 @@ python main.py
 uvicorn main:app --reload
 ```
 
-服务器将在 `http://localhost:8000` 启动。
+服务器将在 `http://0.0.0.0:8000` 启动（可通过 `.env` 配置 `SERVER_HOST` 和 `SERVER_PORT`）。
 
 ### 5. 访问API文档
 
@@ -308,6 +312,18 @@ GET /music/cover/{cover_uuid}
 ```http
 GET /music/lyric/{music_uuid}
 ```
+
+#### 7. 根据歌词搜索音乐
+```http
+GET /music/search/lyric?keyword=love&page=1&page_size=20
+```
+搜索歌词中包含关键词的音乐，返回完整歌词信息。
+
+#### 8. 获取缩略图
+```http
+GET /music/thumbnail/{cover_uuid}
+```
+返回 200x200 JPEG 缩略图，体积约 20KB。
 
 ---
 

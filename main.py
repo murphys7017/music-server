@@ -3,6 +3,7 @@ from app.routers import music
 from app.database import engine, Base
 from app.log import logger
 from app.core.scheduler import get_scheduler
+from app.config import Config
 
 # 创建数据库表
 Base.metadata.create_all(bind=engine)
@@ -23,4 +24,9 @@ async def root():
 if __name__ == "__main__":
     import uvicorn
     logger.info("Starting Music Server...")
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    uvicorn.run(
+        app, 
+        host=Config.SERVER_HOST, 
+        port=Config.SERVER_PORT, 
+        reload=True
+    )
