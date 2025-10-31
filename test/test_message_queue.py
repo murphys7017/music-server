@@ -2,6 +2,11 @@
 消息队列测试示例 / Message Queue Test Example
 """
 
+import sys
+import os
+# 添加项目根目录到 Python 路径
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 import threading
 import time
 from app.core.message_queue import get_queue, push_task, pop_task, set_public, get_public

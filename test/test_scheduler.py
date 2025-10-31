@@ -2,6 +2,11 @@
 定时任务调度器测试示例 / Scheduler Test Example
 """
 
+import sys
+import os
+# 添加项目根目录到 Python 路径
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 import time
 import threading
 from app.core.scheduler import get_scheduler

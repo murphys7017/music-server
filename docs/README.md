@@ -343,9 +343,10 @@ music-server/
 │   ├── message_queue_usage.md
 │   ├── scheduler_usage.md
 │   └── README.md               # 本文档
+├── test/                        # 测试文件
+│   ├── test_message_queue.py   # 消息队列测试
+│   └── test_scheduler.py       # 调度器测试
 ├── main.py                      # 主应用入口
-├── test_message_queue.py        # 消息队列测试
-├── test_scheduler.py            # 调度器测试
 ├── pyproject.toml              # 项目配置
 └── README.md                    # 项目说明
 ```
@@ -437,12 +438,12 @@ scheduler.add_scheduler_task(
 
 ### 测试消息队列
 ```bash
-python test_message_queue.py
+python test/test_message_queue.py
 ```
 
 ### 测试调度器
 ```bash
-python test_scheduler.py
+python test/test_scheduler.py
 ```
 
 ### 测试文件名解析

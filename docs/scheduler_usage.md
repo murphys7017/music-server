@@ -359,7 +359,7 @@ scheduler.start()
 ## 🧪 运行测试 / Run Tests
 
 ```bash
-python test_scheduler.py
+python test/test_scheduler.py
 ```
 
 测试内容:
@@ -391,7 +391,7 @@ python test_scheduler.py
 
 ## 📝 完整示例 / Complete Example
 
-查看 `test_scheduler.py` 获取完整示例代码。
+查看 `test/test_scheduler.py` 获取完整示例代码。
 
 ## 🤝 与消息队列集成 / Integration with Message Queue
 

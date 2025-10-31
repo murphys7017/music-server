@@ -1,0 +1,38 @@
+# 提交类型: 简短描述 (不超过50字符)
+# |<----  最多50个字符  ---->|
+
+# 详细说明 (可选,72字符换行)
+# |<----  72字符换行  ---->|
+
+
+# AI 协助信息 (可选)
+# Co-authored-by: GitHub Copilot
+# AI-Assisted: [Yes/No]
+# Context: [简述对话背景]
+# Date: [对话日期]
+
+# 相关问题 (可选)
+# Refs: #issue编号
+# Closes: #issue编号
+
+# 提交类型:
+#   feat:     新功能
+#   fix:      修复bug
+#   docs:     文档更新
+#   style:    代码格式(不影响代码运行)
+#   refactor: 重构(既不是新增功能,也不是修复bug)
+#   perf:     性能优化
+#   test:     测试相关
+#   chore:    构建过程或辅助工具的变动
+#   revert:   回滚
+#
+# 示例:
+#   feat: 添加消息队列系统
+#   
+#   - 实现 MemoryQueue 类
+#   - 支持任务队列和公共存储
+#   - 添加 TTL 过期机制
+#   
+#   Co-authored-by: GitHub Copilot
+#   Context: 通过对话协作完成轻量级任务调度系统
+#   Date: 2025-11-01
