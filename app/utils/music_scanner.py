@@ -96,6 +96,10 @@ def save_cover_data(cover_data: bytes, mime_type: str = 'image/jpeg') -> Optiona
             f.write(cover_data)
         
         logger.info(f"内嵌封面已保存: {dest_filename}")
+        
+        # 自动生成缩略图
+        generate_thumbnail_for_cover_uuid(cover_uuid)
+        
         return cover_uuid
         
     except Exception as e:
@@ -253,6 +257,7 @@ def scan_music_file(file_path: str, source: str = 'local') -> Optional[Dict[str,
         # 获取文件基本信息
         file_size = file_path_obj.stat().st_size
         filename = file_path_obj.name
+        file_format = file_path_obj.suffix.lower().lstrip('.')  # 获取文件格式（不带点）
         
         # 计算MD5
         file_md5 = calculate_file_md5(file_path)
@@ -304,6 +309,7 @@ def scan_music_file(file_path: str, source: str = 'local') -> Optional[Dict[str,
         music_data = {
             'uuid': str(uuid4()),
             'md5': file_md5,
+            'device_id': 'server',  # 服务端音乐
             'name': normalized['name'],
             'author': normalized['author'],
             'album': normalized.get('album', '') or audio_metadata.get('album', ''),
@@ -311,6 +317,8 @@ def scan_music_file(file_path: str, source: str = 'local') -> Optional[Dict[str,
             'duration': audio_metadata.get('duration', 0),
             'size': file_size,
             'bitrate': audio_metadata.get('bitrate', 0),
+            'file_format': file_format,  # 文件格式
+            'local_path': str(file_path_obj.absolute()),  # 服务端本地路径
             'waveform': None,  # 波形数据可后续生成
             'cover_uuid': cover_uuid,  # 封面UUID
             'lyric': audio_metadata.get('lyric', ''),
@@ -440,7 +448,10 @@ def scan_and_import_folder(
                 continue
             
             # 检查是否已存在（根据MD5）
-            existing_by_md5 = db.query(Music).filter(Music.md5 == music_data['md5']).first()
+            existing_by_md5 = db.query(Music).filter(
+                Music.md5 == music_data['md5'],
+                Music.device_id == 'server'  # 只检查服务端音乐
+            ).first()
             if existing_by_md5:
                 # 更新可能缺失的信息（封面、歌词等）
                 updated = False
@@ -548,23 +559,78 @@ def scan_and_import_folder(
 
 # 使用示例
 if __name__ == "__main__":
+    import sys
     from app.database import SessionLocal
     
-    # 示例：扫描test文件夹（从配置获取）
-    test_folder = Config.MUSIC_DIR
+    # 检查命令行参数
+    if len(sys.argv) < 2:
+        print("使用方法:")
+        print("  python -m app.utils.music_scanner <文件夹路径>")
+        print("\n示例:")
+        print("  python -m app.utils.music_scanner D:/Music")
+        print("  python -m app.utils.music_scanner \"C:/Users/YourName/Music/我的收藏\"")
+        sys.exit(1)
     
+    # 获取文件夹路径
+    folder_path = sys.argv[1]
+    
+    # 检查路径是否存在
+    if not Path(folder_path).exists():
+        print(f"❌ 错误: 路径不存在: {folder_path}")
+        sys.exit(1)
+    
+    if not Path(folder_path).is_dir():
+        print(f"❌ 错误: 不是文件夹: {folder_path}")
+        sys.exit(1)
+    
+    print("=" * 60)
+    print(f"🎵 音乐文件扫描与导入工具")
+    print("=" * 60)
+    print(f"📁 扫描目录: {folder_path}")
+    print(f"🎼 支持格式: {', '.join(SUPPORTED_FORMATS)}")
+    print(f"💾 数据库: MySQL")
+    print("=" * 60)
+    print()
+    
+    # 创建数据库会话
     db = SessionLocal()
     try:
-        result = scan_and_import_folder(test_folder, db, source='local', upgrade_quality=True)
-        print(f"\n扫描结果:")
-        print(f"  总文件数: {result['total']}")
-        print(f"  导入成功: {result['success']}")
-        print(f"  质量升级: {result['upgraded']}")
-        print(f"  跳过: {result['skipped']}")
-        print(f"  失败: {result['failed']}")
+        # 扫描并导入
+        result = scan_and_import_folder(
+            folder_path, 
+            db, 
+            source='local',
+            skip_existing=True,
+            upgrade_quality=True
+        )
+        
+        # 输出结果
+        print()
+        print("=" * 60)
+        print("📊 扫描结果统计")
+        print("=" * 60)
+        print(f"  📂 扫描文件数: {result['total']}")
+        print(f"  ✅ 导入成功: {result['success']}")
+        print(f"  ⬆️  质量升级: {result['upgraded']}")
+        print(f"  ⏭️  跳过: {result['skipped']}")
+        print(f"  ❌ 失败: {result['failed']}")
+        print("=" * 60)
+        
         if result['files']:
-            print(f"\n成功导入的歌曲:")
-            for name in result['files']:
-                print(f"  - {name}")
+            print()
+            print("🎼 成功处理的歌曲:")
+            for name in result['files'][:20]:  # 只显示前20首
+                print(f"  • {name}")
+            if len(result['files']) > 20:
+                print(f"  ... 以及其他 {len(result['files']) - 20} 首歌曲")
+        
+        print()
+        print("✨ 完成!")
+        
+    except Exception as e:
+        print(f"\n❌ 发生错误: {e}")
+        import traceback
+        traceback.print_exc()
+        sys.exit(1)
     finally:
         db.close()

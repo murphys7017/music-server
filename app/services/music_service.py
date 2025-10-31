@@ -159,3 +159,146 @@ def musics_to_json(musics: List[Music]) -> List[Dict[str, Any]]:
 
 def json_to_music(data: Dict[str, Any]) -> Music:
     return Music(**data)
+
+
+# ============ 客户端音乐管理 ============
+
+def add_music_from_client(db: Session, music_data: Dict[str, Any]) -> Music:
+    """
+    客户端添加音乐（仅元数据，无文件）
+    
+    Args:
+        db: 数据库会话
+        music_data: 音乐元数据字典，必须包含:
+            - uuid: 音乐UUID（客户端生成）
+            - md5: 文件MD5
+            - device_id: 设备ID
+            - name, author, album 等元数据
+    
+    Returns:
+        Music: 创建的音乐对象
+    
+    Raises:
+        ValueError: 如果缺少必要字段或 (md5, device_id) 已存在
+    """
+    # 验证必要字段
+    required_fields = ["uuid", "md5", "device_id", "name"]
+    for field in required_fields:
+        if field not in music_data:
+            raise ValueError(f"缺少必要字段: {field}")
+    
+    # 检查 (md5, device_id) 是否已存在
+    existing = db.query(Music).filter(
+        Music.md5 == music_data["md5"],
+        Music.device_id == music_data["device_id"]
+    ).first()
+    
+    if existing:
+        raise ValueError(f"该设备已存在相同MD5的音乐: {existing.uuid}")
+    
+    # 创建音乐记录
+    music = Music(**music_data)
+    db.add(music)
+    db.commit()
+    db.refresh(music)
+    
+    return music
+
+
+def query_music_by_device(
+    db: Session,
+    device_id: Optional[str] = None,
+    page: int = 1,
+    page_size: int = 10
+) -> Dict[str, Any]:
+    """
+    按设备ID查询音乐列表（分页）
+    
+    Args:
+        db: 数据库会话
+        device_id: 设备ID，None表示查询所有设备的音乐
+        page: 页码
+        page_size: 每页数量
+    
+    Returns:
+        dict: {'total': 总数, 'list': 音乐列表}
+    """
+    q = db.query(Music)
+    
+    if device_id:
+        q = q.filter(Music.device_id == device_id)
+    
+    total = q.count()
+    items = q.offset((page-1)*page_size).limit(page_size).all()
+    
+    return {"total": total, "list": items}
+
+
+def delete_music_by_device(db: Session, uuid: str, device_id: str) -> bool:
+    """
+    删除指定设备的音乐
+    
+    Args:
+        db: 数据库会话
+        uuid: 音乐UUID
+        device_id: 设备ID（用于权限验证）
+    
+    Returns:
+        bool: 是否删除成功
+    """
+    music = db.query(Music).filter(
+        Music.uuid == uuid,
+        Music.device_id == device_id
+    ).first()
+    
+    if not music:
+        return False
+    
+    db.delete(music)
+    db.commit()
+    return True
+
+
+def fuzzy_query_music_by_device(
+    db: Session,
+    device_id: Optional[str] = None,
+    name: Optional[str] = None,
+    author: Optional[str] = None,
+    album: Optional[str] = None,
+    page: int = 1,
+    page_size: int = 10
+) -> Dict[str, Any]:
+    """
+    按设备ID模糊搜索音乐
+    
+    Args:
+        db: 数据库会话
+        device_id: 设备ID，None表示搜索所有设备
+        name, author, album: 搜索关键词（OR逻辑）
+        page, page_size: 分页参数
+    
+    Returns:
+        dict: {'total': 总数, 'list': 音乐列表}
+    """
+    q = db.query(Music)
+    
+    # 设备过滤
+    if device_id:
+        q = q.filter(Music.device_id == device_id)
+    
+    # 构建 OR 条件
+    conditions = []
+    if name:
+        conditions.append(Music.name.like(f"%{name}%"))
+    if author:
+        conditions.append(Music.author.like(f"%{author}%"))
+    if album:
+        conditions.append(Music.album.like(f"%{album}%"))
+    
+    if conditions:
+        q = q.filter(or_(*conditions))
+    
+    total = q.count()
+    items = q.offset((page-1)*page_size).limit(page_size).all()
+    
+    return {"total": total, "list": items}

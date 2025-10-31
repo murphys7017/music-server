@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session
 from typing import Optional, List, Dict, Any
 from pathlib import Path
 from urllib.parse import unquote
+from pydantic import BaseModel
 
 from app.config import Config
 from app.database import get_db
@@ -18,29 +19,92 @@ from app.log import logger
 router = APIRouter(prefix="/music", tags=["music"])
 
 
+# Pydantic 模型定义
+class MusicAddRequest(BaseModel):
+    """客户端添加音乐请求"""
+    uuid: str
+    md5: str
+    device_id: str
+    name: str
+    author: str = "未知"
+    album: str = ""
+    source: str = "local"
+    duration: int = 0
+    size: int = 0
+    bitrate: int = 0
+    file_format: str | None = None
+    local_path: str | None = None  # 服务端本地文件路径
+    cover_uuid: str | None = None
+    lyric: str | None = None
+
+
+@router.post("/add")
+async def add_music(
+    request: MusicAddRequest,
+    db: Session = Depends(get_db)
+):
+    """
+    客户端添加音乐（仅上传元数据）
+    
+    - **uuid**: 音乐UUID（客户端生成）
+    - **md5**: 文件MD5
+    - **device_id**: 设备ID
+    - **name**: 歌曲名
+    - **author**: 艺术家
+    - **其他元数据**: 专辑、时长、比特率等
+    
+    注意：(md5, device_id) 必须唯一
+    """
+    try:
+        music = music_service.add_music_from_client(db, request.dict())
+        
+        return {
+            "code": 200,
+            "message": "音乐添加成功",
+            "data": {
+                "uuid": music.uuid,
+                "name": music.name,
+                "author": music.author,
+                "device_id": music.device_id,
+            }
+        }
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        logger.error(f"添加音乐失败: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @router.get("/list")
 async def list_music(
     page: int = Query(1, ge=1, description="页码"),
     page_size: int = Query(10, ge=1, le=100, description="每页数量"),
+    device_id: Optional[str] = Query(None, description="设备ID（不传则返回所有设备的音乐）"),
     db: Session = Depends(get_db)
 ):
     """
     分页查询音乐列表
-    返回音乐的完整信息，包括封面UUID、歌词等
+    支持按设备过滤
+    
+    - **page**: 页码
+    - **page_size**: 每页数量
+    - **device_id**: 设备ID（可选）
+      - 不传：返回所有音乐
+      - "server"：仅服务器音乐
+      - 其他：指定设备的音乐
     """
     try:
-        # 计算偏移量
-        offset = (page - 1) * page_size
-        
-        # 查询总数
-        total = db.query(Music).count()
-        
-        # 查询当前页数据
-        musics = db.query(Music).offset(offset).limit(page_size).all()
+        # 使用新的服务层函数，支持设备过滤
+        result = music_service.query_music_by_device(
+            db=db,
+            device_id=device_id,
+            page=page,
+            page_size=page_size
+        )
         
         # 序列化为JSON
         music_list = []
-        for music in musics:
+        for music in result['list']:
             music_dict = music_service.music_to_json(music)
             # 添加播放URL
             music_dict['play_url'] = f"/music/play/{music.uuid}"
@@ -60,7 +124,7 @@ async def list_music(
             "code": 200,
             "message": "success",
             "data": {
-                "total": total,
+                "total": result['total'],
                 "page": page,
                 "page_size": page_size,
                 "list": music_list
@@ -76,16 +140,19 @@ async def search_music(
     keyword: str = Query(..., description="搜索关键词"),
     page: int = Query(1, ge=1, description="页码"),
     page_size: int = Query(10, ge=1, le=100, description="每页数量"),
+    device_id: Optional[str] = Query(None, description="设备ID（不传则搜索所有设备）"),
     db: Session = Depends(get_db)
 ):
     """
     模糊搜索音乐
-    支持按歌名、作者、专辑搜索
+    支持按歌名、作者、专辑搜索（OR逻辑）
+    支持按设备过滤
     """
     try:
-        # 模糊查询
-        result = music_service.fuzzy_query_music(
+        # 使用新的服务层函数，支持设备过滤
+        result = music_service.fuzzy_query_music_by_device(
             db=db,
+            device_id=device_id,
             name=keyword,
             author=keyword,
             album=keyword,
@@ -218,6 +285,12 @@ async def play_music(
     """
     播放音乐（音频流）
     根据UUID从数据库查找音乐文件并返回流
+    
+    工作流程：
+    1. 服务端音乐（device_id="server"）：直接使用 local_path 播放
+    2. 客户端音乐（其他 device_id）：
+       - 客户端应优先检查本地映射表
+       - 本地没有时，可以调用此接口从服务器获取（如果服务器有副本）
     """
     try:
         # 从数据库获取音乐信息
@@ -225,32 +298,47 @@ async def play_music(
         if not music:
             raise HTTPException(status_code=404, detail="Music not found")
         
-        # 构建文件路径（暂时使用MUSIC_DIR，后续可以根据source字段处理）
-        # 这里需要根据实际存储方式调整
-        # 如果音乐文件存储路径在数据库中，可以添加file_path字段
-        # 目前先按照原始文件名在MUSIC_DIR查找
-        music_dir = Path(Config.MUSIC_DIR)
-        
-        # 尝试查找文件（这里需要优化，应该在数据库存储完整路径）
         file_path = None
-        for ext in Config.MUSIC_EXTS:
-            # 尝试多种可能的文件名格式
-            possible_names = [
-                f"{music.name} - {music.author}{ext}",
-                f"{music.name}-{music.author}{ext}",
-                f"{music.author} - {music.name}{ext}",
-            ]
-            for name in possible_names:
-                test_path = music_dir / name
-                if test_path.exists():
-                    file_path = test_path
-                    break
-            if file_path:
-                break
         
-        if not file_path or not file_path.exists():
-            logger.error(f"音乐文件未找到: {music.name} - {music.author}")
-            raise HTTPException(status_code=404, detail="Music file not found")
+        # 优先使用 local_path（适用于服务端音乐和有本地副本的客户端音乐）
+        local_path_value = getattr(music, 'local_path', None)
+        if local_path_value:
+            file_path = Path(local_path_value)
+            if not file_path.exists():
+                logger.warning(f"local_path 指向的文件不存在: {local_path_value}")
+                file_path = None
+        
+        # 如果没有找到文件
+        if not file_path:
+            device_id = getattr(music, 'device_id', 'server')
+            if device_id == 'server':
+                # 服务端音乐但没有 local_path，尝试在 MUSIC_DIR 查找
+                music_dir = Path(Config.MUSIC_DIR)
+                
+                for ext in Config.MUSIC_EXTS:
+                    possible_names = [
+                        f"{music.name} - {music.author}{ext}",
+                        f"{music.name}-{music.author}{ext}",
+                        f"{music.author} - {music.name}{ext}",
+                    ]
+                    for name in possible_names:
+                        test_path = music_dir / name
+                        if test_path.exists():
+                            file_path = test_path
+                            break
+                    if file_path:
+                        break
+                
+                if not file_path:
+                    logger.error(f"服务端音乐文件未找到: {music.name} - {music.author} (UUID: {uuid})")
+                    raise HTTPException(status_code=404, detail="Music file not found on server")
+            else:
+                # 客户端音乐，服务器没有副本
+                logger.info(f"客户端音乐，服务器无副本: {music.name} (device_id: {device_id})")
+                raise HTTPException(
+                    status_code=404,
+                    detail=f"Music file not available on server (device_id: {device_id})"
+                )
         
         # 更新播放次数
         current_count = getattr(music, 'play_count', 0)
@@ -387,4 +475,38 @@ async def get_thumbnail(cover_uuid: str):
         raise
     except Exception as e:
         logger.error(f"获取缩略图失败 {cover_uuid}: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.delete("/{uuid}")
+async def delete_music(
+    uuid: str,
+    device_id: str = Query(..., description="设备ID（用于权限验证）"),
+    db: Session = Depends(get_db)
+):
+    """
+    删除音乐
+    
+    - **uuid**: 音乐UUID
+    - **device_id**: 设备ID（用于验证权限，只能删除该设备的音乐）
+    
+    注意：仅删除数据库记录，不删除本地文件（客户端负责删除本地文件）
+    """
+    try:
+        success = music_service.delete_music_by_device(db, uuid, device_id)
+        
+        if not success:
+            raise HTTPException(
+                status_code=404,
+                detail="音乐不存在或无权删除（device_id不匹配）"
+            )
+        
+        return {
+            "code": 200,
+            "message": "音乐删除成功"
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"删除音乐失败: {e}")
         raise HTTPException(status_code=500, detail=str(e))

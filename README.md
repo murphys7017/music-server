@@ -16,8 +16,10 @@
 这是一个功能完整的音乐服务器系统,支持:
 - 🎵 音乐管理(数据库存储、元数据提取)
 - 📁 文件扫描(自动扫描文件夹导入音乐)
-- 🎨 封面管理(内嵌封面提取、外部封面关联)
-- 📝 歌词管理(内嵌歌词、外部lrc文件)
+- 🎨 封面管理(内嵌封面提取、外部封面关联、缩略图生成)
+- 📝 歌词管理(内嵌歌词、外部lrc文件、歌词搜索)
+- 🔒 认证授权(Bearer Token 认证、白名单机制)
+- 🌐 跨域支持(可配置 CORS)
 - 🔄 消息队列(轻量级任务队列系统)
 - ⏰ 定时任务(支持interval/cron/once调度)
 - 🎬 B站集成(计划支持B站音乐下载)
@@ -27,9 +29,12 @@
 - **Web框架**: FastAPI
 - **数据库**: MySQL + SQLAlchemy ORM
 - **音频处理**: Mutagen (元数据提取)
+- **图片处理**: Pillow (缩略图生成)
 - **日志系统**: Loguru
+- **认证**: Bearer Token
 - **消息队列**: 内存队列(Python queue + threading)
 - **调度器**: 自研定时任务系统
+- **配置管理**: python-dotenv
 
 ---
 
@@ -73,7 +78,7 @@
 ### 1. 安装依赖
 
 ```bash
-pip install fastapi uvicorn sqlalchemy pymysql mutagen loguru
+pip install fastapi uvicorn sqlalchemy pymysql mutagen loguru python-dotenv pillow requests
 ```
 
 或使用 uv:
@@ -105,6 +110,13 @@ SERVER_PORT=8000
 
 # 认证
 STATIC_TOKEN=your_static_token_here
+
+# CORS 跨域配置（多个源用逗号分隔）
+CORS_ORIGINS=*
+
+# 开发配置
+RELOAD=false         # 热重载开关（开发环境可设为 true）
+DB_ECHO=false        # 数据库 SQL 日志开关（调试时可设为 true）
 ```
 
 ### 3. 数据库
@@ -256,74 +268,124 @@ scheduler.add_scheduler_task(
 
 ## 🔌 API文档 / API Documentation
 
+### 认证说明
+
+所有 API（除白名单路径外）都需要在请求头中携带 Token：
+
+```http
+Authorization: Bearer your_static_token_here
+```
+
+**白名单路径**（不需要认证）：
+- `/` - 根路径
+- `/docs` - Swagger 文档
+- `/redoc` - ReDoc 文档
+- `/openapi.json` - OpenAPI 规范
+
+**请求示例**：
+```bash
+curl -H "Authorization: Bearer your_static_token_here" \
+     http://localhost:8000/music/list?page=1&page_size=10
+```
+
+---
+
 ### 音乐相关 API
 
 #### 1. 列出音乐 (分页)
 ```http
 GET /music/list?page=1&page_size=20
+Authorization: Bearer <token>
 ```
 
 **响应:**
 ```json
 {
-  "total": 100,
-  "page": 1,
-  "page_size": 20,
-  "items": [
-    {
-      "uuid": "123e4567-e89b-12d3-a456-426614174000",
-      "name": "玉盘",
-      "author": "葫芦童声",
-      "album": "专辑名",
-      "duration": 245,
-      "size": 10485760,
-      "bitrate": 320,
-      "cover_uuid": "cover-uuid",
-      "play_count": 10,
-      "play_url": "/music/play/{uuid}",
-      "cover_url": "/music/cover/{cover_uuid}"
-    }
-  ]
+  "code": 200,
+  "message": "success",
+  "data": {
+    "total": 100,
+    "page": 1,
+    "page_size": 20,
+    "list": [
+      {
+        "uuid": "123e4567-e89b-12d3-a456-426614174000",
+        "name": "玉盘",
+        "author": "葫芦童声",
+        "album": "专辑名",
+        "duration": 245,
+        "size": 10485760,
+        "bitrate": 320,
+        "cover_uuid": "cover-uuid",
+        "play_count": 10,
+        "play_url": "/music/play/{uuid}",
+        "cover_url": "/music/cover/{cover_uuid}",
+        "thumbnail_url": "/music/thumbnail/{cover_uuid}"
+      }
+    ]
+  }
 }
 ```
 
 #### 2. 搜索音乐
 ```http
 GET /music/search?keyword=玉盘&page=1&page_size=20
+Authorization: Bearer <token>
 ```
+支持按歌名、作者、专辑模糊搜索（OR 逻辑）。
 
 #### 3. 获取音乐详情
 ```http
-GET /music/{music_uuid}
+GET /music/detail/{music_uuid}
+Authorization: Bearer <token>
 ```
 
 #### 4. 播放音乐
 ```http
 GET /music/play/{music_uuid}
+Authorization: Bearer <token>
 ```
 返回音频流,自动增加播放次数
 
 #### 5. 获取封面
 ```http
 GET /music/cover/{cover_uuid}
+Authorization: Bearer <token>
 ```
 
 #### 6. 获取歌词
 ```http
 GET /music/lyric/{music_uuid}
+Authorization: Bearer <token>
 ```
 
 #### 7. 根据歌词搜索音乐
 ```http
 GET /music/search/lyric?keyword=love&page=1&page_size=20
+Authorization: Bearer <token>
 ```
 搜索歌词中包含关键词的音乐，返回完整歌词信息。
 
 #### 8. 获取缩略图
 ```http
 GET /music/thumbnail/{cover_uuid}
+Authorization: Bearer <token>
 ```
 返回 200x200 JPEG 缩略图，体积约 20KB。
+
+---
+
+### 跨域支持
+
+服务器已启用 CORS，支持跨域请求。可通过 `.env` 配置允许的源：
+
+```bash
+# 允许所有源（开发环境）
+CORS_ORIGINS=*
+
+# 指定特定域名（生产环境推荐）
+CORS_ORIGINS=http://localhost:3000,https://yourdomain.com
+```
 
 ---
 
@@ -338,6 +400,9 @@ music-server/
 │   │   ├── __init__.py
 │   │   ├── message_queue.py    # 消息队列
 │   │   └── scheduler.py        # 定时任务调度器
+│   ├── middleware/              # 中间件
+│   │   ├── __init__.py
+│   │   └── auth.py             # Token 认证中间件
 │   ├── models/                  # 数据库模型
 │   │   ├── __init__.py
 │   │   ├── music.py            # 音乐模型
@@ -351,7 +416,8 @@ music-server/
 │   ├── utils/                   # 工具函数
 │   │   ├── __init__.py
 │   │   ├── music_filename_parser.py  # 文件名解析
-│   │   └── music_scanner.py          # 音乐扫描
+│   │   ├── music_scanner.py          # 音乐扫描
+│   │   └── thumbnail_generator.py    # 缩略图生成
 │   ├── config.py                # 配置管理
 │   ├── database.py              # 数据库连接
 │   └── log.py                   # 日志系统
@@ -360,6 +426,7 @@ music-server/
 │   ├── scheduler_usage.md
 │   └── README.md               # 本文档
 ├── test/                        # 测试文件
+│   ├── test_auth.py            # 认证测试
 │   ├── test_message_queue.py   # 消息队列测试
 │   └── test_scheduler.py       # 调度器测试
 ├── main.py                      # 主应用入口
@@ -451,6 +518,11 @@ scheduler.add_scheduler_task(
 ---
 
 ## 🧪 测试 / Testing
+
+### 测试认证功能
+```bash
+python test/test_auth.py
+```
 
 ### 测试消息队列
 ```bash
@@ -576,8 +648,9 @@ for i in range(3):
 
 ## 📚 相关文档 / Related Documentation
 
-- [消息队列使用文档](./message_queue_usage.md)
-- [定时任务调度器文档](./scheduler_usage.md)
+- [消息队列使用文档](./docs/message_queue_usage.md)
+- [定时任务调度器文档](./docs/scheduler_usage.md)
+- [更新日志](./docs/CHANGELOG.md)
 
 ---
 

@@ -36,6 +36,13 @@ class Config:
     SERVER_HOST = os.getenv("SERVER_HOST", "0.0.0.0")
     SERVER_PORT = int(os.getenv("SERVER_PORT", "8000"))
     
+    # CORS 配置
+    CORS_ORIGINS = os.getenv("CORS_ORIGINS", "*").split(",")  # 支持多个域名，用逗号分隔
+    
+    # 开发配置
+    RELOAD = os.getenv("RELOAD", "false").lower() == "true"  # 热重载开关
+    DB_ECHO = os.getenv("DB_ECHO", "false").lower() == "true"  # 数据库 SQL 日志开关
+    
     # 其他全局配置项...
 
 # 全局变量（如需在多处共享可在此定义）
