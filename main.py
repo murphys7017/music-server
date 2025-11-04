@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from app.routers import music, device
+from app.routers import music, device, recommend
 from app.database import engine, Base
 from app.log import logger
 from app.core.scheduler import get_scheduler
@@ -29,6 +29,7 @@ logger.info("Token 认证中间件已启用 / Token authentication middleware en
 # 注册路由
 app.include_router(music.router, tags=["music"])
 app.include_router(device.router, tags=["device"])
+app.include_router(recommend.router, tags=["recommend"])
 logger.info("路由已注册 / Routers registered")
 
 # 启动调度器

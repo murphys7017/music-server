@@ -31,7 +31,7 @@ class Scheduler:
     - 动态添加/删除任务 / Dynamic task management
     """
     
-    def __init__(self, check_interval: int = 10):
+    def __init__(self, check_interval: int = 60):
         """
         初始化调度器
         

@@ -196,7 +196,40 @@ def get_device_type():
     return 'other'
 ```
 
-### 2. 注册设备到服务器
+### 2. 初始化 HTTP 客户端（配置 X-Device-ID）
+
+```python
+import requests
+
+def init_http_client(device_id: str) -> requests.Session:
+    """
+    初始化 HTTP 客户端，统一配置 X-Device-ID 请求头
+    推荐方式：在 Session 中配置全局请求头
+    """
+    session = requests.Session()
+    session.headers.update({
+        "X-Device-ID": device_id,  # 统一配置设备ID
+        "Content-Type": "application/json",
+        # 如需认证，添加 Authorization
+        # "Authorization": f"Bearer {token}",
+    })
+    return session
+
+# JavaScript/TypeScript 示例
+# const axios = require('axios');
+# 
+# function initHttpClient(deviceId) {
+#   return axios.create({
+#     baseURL: 'http://your-server.com',
+#     headers: {
+#       'X-Device-ID': deviceId,
+#       'Content-Type': 'application/json'
+#     }
+#   });
+# }
+```
+
+### 3. 注册设备到服务器
 
 ```python
 import requests
@@ -274,12 +307,19 @@ def add_local_music(file_path, db, server_url, token, device_id):
         "file_format": metadata['file_format'],
     }
     
-    # 6. 上传到服务器
-    response = requests.post(
+    # 6. 上传到服务器（推荐：使用 Session 配置全局请求头）
+    session = init_http_client(device_id)  # X-Device-ID 已配置
+    response = session.post(
         f"{server_url}/music/add",
-        headers={"Authorization": f"Bearer {token}"},
         json=music_data
     )
+    
+    # 备选方式：使用查询参数（不推荐但仍支持）
+    # response = requests.post(
+    #     f"{server_url}/music/add?device_id={device_id}",
+    #     headers={"Authorization": f"Bearer {token}"},
+    #     json=music_data
+    # )
     
     if response.status_code == 200:
         print(f"音乐添加成功: {metadata['name']}")
@@ -400,31 +440,27 @@ class ResourceManager:
 
 ## 🌐 API 调用示例
 
+> **推荐方式**: 使用 `X-Device-ID` 请求头传递设备ID，更符合 RESTful 规范。
+> 详细说明请参考：[API Device ID 使用指南](./api_device_id_usage.md)
+
 ### 1. 获取音乐列表
 
 ```python
-def get_music_list(server_url, token, device_id=None, page=1, page_size=20):
+def get_music_list(session, server_url, page=1, page_size=20):
     """
-    获取音乐列表
+    获取音乐列表（使用请求头）
     
     Args:
-        device_id: 
-            - None: 返回所有音乐
-            - "server": 仅服务器音乐
-            - 其他: 指定设备的音乐
+        session: 已配置 X-Device-ID 的 requests.Session
+        page: 页码
+        page_size: 每页数量
     """
-    params = {
-        "page": page,
-        "page_size": page_size
-    }
-    
-    if device_id:
-        params["device_id"] = device_id
-    
-    response = requests.get(
+    response = session.get(
         f"{server_url}/music/list",
-        headers={"Authorization": f"Bearer {token}"},
-        params=params
+        params={
+            "page": page,
+            "page_size": page_size
+        }
     )
     
     if response.status_code == 200:
@@ -432,27 +468,125 @@ def get_music_list(server_url, token, device_id=None, page=1, page_size=20):
         return data['data']['list']
     else:
         raise Exception(f"获取列表失败: {response.text}")
+
+# 兼容旧方式：使用查询参数（不推荐）
+def get_music_list_legacy(server_url, token, device_id, page=1, page_size=20):
+    """使用查询参数方式（向后兼容）"""
+    response = requests.get(
+        f"{server_url}/music/list",
+        headers={"Authorization": f"Bearer {token}"},
+        params={
+            "device_id": device_id,  # 查询参数优先级高于请求头
+            "page": page,
+            "page_size": page_size
+        }
+    )
+    return response.json()['data']['list']
 ```
 
 ### 2. 搜索音乐
 
 ```python
-def search_music(server_url, token, keyword, device_id=None):
-    """搜索音乐"""
-    params = {
-        "keyword": keyword,
-        "page": 1,
-        "page_size": 50
-    }
-    
-    if device_id:
-        params["device_id"] = device_id
-    
-    response = requests.get(
+def search_music(session, server_url, keyword, page=1, page_size=50):
+    """搜索音乐（使用请求头）"""
+    response = session.get(
         f"{server_url}/music/search",
-        headers={"Authorization": f"Bearer {token}"},
-        params=params
+        params={
+            "keyword": keyword,
+            "page": page,
+            "page_size": page_size
+        }
     )
+    
+    if response.status_code == 200:
+        return response.json()['data']['list']
+    else:
+        raise Exception(f"搜索失败: {response.text}")
+```
+
+### 3. 删除音乐
+
+```python
+def delete_music(session, server_url, uuid):
+    """删除音乐（使用请求头）"""
+    response = session.delete(f"{server_url}/music/{uuid}")
+    
+    if response.status_code == 200:
+        print(f"删除成功: {uuid}")
+        return True
+    else:
+        print(f"删除失败: {response.text}")
+        return False
+```
+
+### JavaScript 示例
+
+```javascript
+// 初始化 Axios 客户端
+const axios = require('axios');
+
+const apiClient = axios.create({
+  baseURL: 'http://your-server.com',
+  headers: {
+    'X-Device-ID': deviceId,  // 统一配置
+    'Content-Type': 'application/json'
+  }
+});
+
+// 获取音乐列表
+async function getMusicList(page = 1, pageSize = 20) {
+  const response = await apiClient.get('/music/list', {
+    params: { page, page_size: pageSize }
+  });
+  return response.data.data.list;
+}
+
+// 搜索音乐
+async function searchMusic(keyword) {
+  const response = await apiClient.get('/music/search', {
+    params: { keyword, page: 1, page_size: 50 }
+  });
+  return response.data.data.list;
+}
+
+// 删除音乐
+async function deleteMusic(uuid) {
+  await apiClient.delete(`/music/${uuid}`);
+  console.log(`删除成功: ${uuid}`);
+}
+```
+
+---
+
+## 🔄 请求头 vs 查询参数对比
+
+| 方式 | 优点 | 缺点 | 推荐度 |
+|------|------|------|--------|
+| **X-Device-ID 请求头** | ✅ 符合 RESTful 规范<br>✅ 统一配置一次<br>✅ URL 更简洁 | ⚠️ 需要客户端升级 | ⭐⭐⭐⭐⭐ |
+| **查询参数** | ✅ 向后兼容<br>✅ 易于调试 | ❌ URL 冗长<br>❌ 每次都要传递 | ⭐⭐⭐ |
+
+### 优先级规则
+
+当同时提供查询参数和请求头时，**查询参数优先级更高**，用于显式覆盖默认设备ID。
+
+```python
+# 场景：临时查询其他设备的音乐
+session = init_http_client("device-A")  # 默认设备A
+
+# 查询设备B的音乐（查询参数覆盖）
+response = session.get(
+    f"{server_url}/music/list",
+    params={"device_id": "device-B"}  # 显式覆盖
+)
+```
+
+---
+
+## ❓ 常见问题
+
+### Q1: 封面和歌词如何关联？
+
+**A**:
     
     return response.json()['data']['list']
 ```
